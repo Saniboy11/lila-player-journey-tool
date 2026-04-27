@@ -1,5 +1,4 @@
-# Raw telemetry data - do not commit
-player_data/player_data/February_*/
+# DS Store only
 player_data/player_data/.DS_Store
 
 # Python
