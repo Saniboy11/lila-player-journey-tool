@@ -58,14 +58,14 @@ def load_day_data(folder_path: str) -> pd.DataFrame:
         
     # 3. Timestamp formatting (Robustness)
     if 'ts' in df.columns:
-        # If ts is loaded as integer milliseconds, convert to datetime
         if pd.api.types.is_numeric_dtype(df['ts']):
-            df['ts'] = pd.to_datetime(df['ts'], unit='ms')
+            # Raw integers in the data are Unix seconds, not milliseconds
+            # despite what the parquet schema metadata may claim
+            df['ts'] = pd.to_datetime(df['ts'], unit='s')
         elif pd.api.types.is_datetime64_any_dtype(df['ts']):
-            # Fix: Parquet schema incorrectly claims timeUnit=milliseconds 
-            # for raw integers that are actually seconds since epoch.
-            # We extract the raw integer and cast it back to seconds.
-            df['ts'] = pd.to_datetime(df['ts'].astype('int64'), unit='s')
+            # If already parsed as datetime but as ms, reinterpret as seconds
+            raw = df['ts'].astype('int64') // 1_000_000  # ns -> ms -> s
+            df['ts'] = pd.to_datetime(raw, unit='s')
             
     # 4. Sort chronologically (Match Reconstruction)
     if 'match_id' in df.columns and 'ts' in df.columns:
