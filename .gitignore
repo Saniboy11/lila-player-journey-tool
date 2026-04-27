@@ -1,0 +1,25 @@
+# Raw telemetry data - do not commit
+player_data/player_data/February_*/
+player_data/player_data/.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
