@@ -7,10 +7,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
-# Cap files read per day to keep cold-start under Streamlit Cloud's 60s timeout.
-# 80 files at ~9KB each = ~720KB raw, which parses in ~5-8s on free tier.
-MAX_FILES_PER_DAY = 80
-
 
 def _read_one(filepath: str) -> pd.DataFrame | None:
     """Read a single parquet file. Returns None on failure."""
@@ -36,8 +32,8 @@ def load_day_data(folder_path: str) -> pd.DataFrame:
         if not os.path.isdir(os.path.join(folder_path, f))
     ]
 
-    # Limit to cap; sort by name for reproducibility
-    all_files = sorted(all_files)[:MAX_FILES_PER_DAY]
+    # Sort by name for reproducibility
+    all_files = sorted(all_files)
 
     if not all_files:
         return pd.DataFrame()
