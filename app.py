@@ -21,8 +21,19 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
     /* ── Global ─────────────────────────── */
-    html, body, [class*="st-"] {
+    html, body,
+    .stMarkdown, .stText, .stAlert,
+    p, span, div, label, li, td, th,
+    input, textarea, select, button {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    /* Protect Streamlit's internal icon fonts from being overridden */
+    [data-testid="collapsedControl"] *,
+    [data-testid="stToolbar"] *,
+    [data-testid="stStatusWidget"] *,
+    .stIcon, svg, i,
+    [class*="icon"], [class*="Icon"] {
+        font-family: inherit !important;
     }
     .main .block-container {
         padding-top: 1.5rem;
