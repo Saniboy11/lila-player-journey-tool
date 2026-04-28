@@ -3,7 +3,8 @@ import pandas as pd
 from PIL import Image
 import numpy as np
 
-from src.config import MINIMAP_PIXELS, COLORS
+from src.config import MINIMAP_PIXELS, COLORS, EVENT_STYLES
+
 
 def create_base_minimap_figure(img: Image.Image, map_name: str) -> go.Figure:
     """
@@ -37,21 +38,26 @@ def create_base_minimap_figure(img: Image.Image, map_name: str) -> go.Figure:
     fig.update_yaxes(showgrid=False, range=[0, MINIMAP_PIXELS], zeroline=False, visible=False)
 
     fig.update_layout(
-        title=f"Player Journey Intelligence - {map_name}",
         width=800,
         height=800,
-        margin=dict(l=0, r=0, t=40, b=0),
+        margin=dict(l=0, r=0, t=10, b=0),
         template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         legend=dict(
             yanchor="top",
             y=0.99,
             xanchor="left",
             x=0.01,
-            bgcolor="rgba(0,0,0,0.5)"
+            bgcolor="rgba(20,20,20,0.85)",
+            bordercolor="rgba(255,140,0,0.3)",
+            borderwidth=1,
+            font=dict(color="#E0E0E0", size=11),
         )
     )
     
     return fig
+
 
 def add_player_trajectories(fig: go.Figure, df: pd.DataFrame):
     """
@@ -89,70 +95,102 @@ def add_player_trajectories(fig: go.Figure, df: pd.DataFrame):
         ))
         
     # Add dummy legend entries for the toggles
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode='lines', line=dict(color=COLORS['Human'], width=2, dash='solid'), name='Human Paths', legendgroup='Human Paths'))
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode='lines', line=dict(color=COLORS['Bot'], width=2, dash='dot'), name='Bot Paths', legendgroup='Bot Paths'))
+    fig.add_trace(go.Scatter(
+        x=[None], y=[None], mode='lines',
+        line=dict(color=COLORS['Human'], width=3, dash='solid'),
+        name='⬤  Human Paths',
+        legendgroup='Human Paths'
+    ))
+    fig.add_trace(go.Scatter(
+        x=[None], y=[None], mode='lines',
+        line=dict(color=COLORS['Bot'], width=3, dash='dot'),
+        name='◌  Bot Paths',
+        legendgroup='Bot Paths'
+    ))
     
     return fig
+
 
 def add_event_markers(fig: go.Figure, df: pd.DataFrame):
     """
     Adds specific combat and item events as scatter markers.
+    ALWAYS adds legend entries for every event type even when no data exists,
+    so the legend always shows a complete professional tracker.
     """
-    if df.empty:
-        return fig
-        
-    # Separate event types for layer toggling
-    kills = df[df['event'].isin(['Kill', 'BotKill'])]
-    deaths = df[df['event'].isin(['Killed', 'BotKilled'])]
-    storm_deaths = df[df['event'] == 'KilledByStorm']
-    loot = df[df['event'] == 'Loot']
+    # Define the event groups we track and their mapping to raw event names
+    event_groups = [
+        {
+            "key": "kills",
+            "raw_events": ["BotKill"],
+            "style_key": "BotKill",
+            "legend_name": "⚔  Kills",
+        },
+        {
+            "key": "deaths",
+            "raw_events": ["BotKilled"],
+            "style_key": "BotKilled",
+            "legend_name": "☠  Deaths",
+        },
+        {
+            "key": "storm_deaths",
+            "raw_events": ["KilledByStorm"],
+            "style_key": "KilledByStorm",
+            "legend_name": "🌀  Storm Deaths",
+        },
+        {
+            "key": "loot",
+            "raw_events": ["Loot"],
+            "style_key": "Loot",
+            "legend_name": "💎  Loot Pickups",
+        },
+    ]
     
-    if not kills.empty:
-        fig.add_trace(go.Scatter(
-            x=kills['pixel_x'], y=kills['pixel_y'],
-            mode='markers',
-            marker=dict(symbol='cross', size=12, color='#FF5555', line=dict(width=1, color='black')),
-            name='Kills',
-            hovertext=kills.apply(lambda r: f"ID: {r['user_id']}<br>Event: {r['event']}<br>Time: {r.get('elapsed_str', 'N/A')}<br>Pos: ({r.get('x', 0):.0f}, {r.get('z', 0):.0f})", axis=1),
-            hoverinfo='text',
-            legendgroup="Events"
-        ))
+    for group in event_groups:
+        style = EVENT_STYLES[group["style_key"]]
+        subset = df[df['event'].isin(group["raw_events"])] if not df.empty else pd.DataFrame()
         
-    if not deaths.empty:
-        fig.add_trace(go.Scatter(
-            x=deaths['pixel_x'], y=deaths['pixel_y'],
-            mode='markers',
-            marker=dict(symbol='x', size=12, color='#FFB86C', line=dict(width=1, color='black')),
-            name='Deaths',
-            hovertext=deaths.apply(lambda r: f"ID: {r['user_id']}<br>Event: {r['event']}<br>Time: {r.get('elapsed_str', 'N/A')}<br>Pos: ({r.get('x', 0):.0f}, {r.get('z', 0):.0f})", axis=1),
-            hoverinfo='text',
-            legendgroup="Events"
-        ))
-        
-    if not storm_deaths.empty:
-        fig.add_trace(go.Scatter(
-            x=storm_deaths['pixel_x'], y=storm_deaths['pixel_y'],
-            mode='markers',
-            marker=dict(symbol='diamond', size=14, color='#BD93F9', line=dict(width=1, color='black')),
-            name='Storm Deaths',
-            hovertext=storm_deaths.apply(lambda r: f"ID: {r['user_id']}<br>Event: {r['event']}<br>Time: {r.get('elapsed_str', 'N/A')}<br>Pos: ({r.get('x', 0):.0f}, {r.get('z', 0):.0f})", axis=1),
-            hoverinfo='text',
-            legendgroup="Events"
-        ))
-        
-    if not loot.empty:
-        fig.add_trace(go.Scatter(
-            x=loot['pixel_x'], y=loot['pixel_y'],
-            mode='markers',
-            marker=dict(symbol='circle', size=6, color='#8BE9FD', opacity=0.7),
-            name='Loot',
-            hovertext=loot.apply(lambda r: f"ID: {r['user_id']}<br>Event: Loot<br>Time: {r.get('elapsed_str', 'N/A')}<br>Pos: ({r.get('x', 0):.0f}, {r.get('z', 0):.0f})", axis=1),
-            hoverinfo='text',
-            legendgroup="Events",
-            visible='legendonly' 
-        ))
+        if not subset.empty and 'pixel_x' in subset.columns:
+            hover_text = subset.apply(
+                lambda r: (
+                    f"ID: {r['user_id']}<br>"
+                    f"Event: {r['event']}<br>"
+                    f"Time: {r.get('elapsed_str', 'N/A')}<br>"
+                    f"Pos: ({r.get('x', 0):.0f}, {r.get('z', 0):.0f})"
+                ), axis=1
+            )
+            fig.add_trace(go.Scatter(
+                x=subset['pixel_x'],
+                y=subset['pixel_y'],
+                mode='markers',
+                marker=dict(
+                    symbol=style["symbol"],
+                    size=style["size"],
+                    color=style["color"],
+                    line=dict(width=1, color='rgba(0,0,0,0.6)')
+                ),
+                name=group["legend_name"],
+                hovertext=hover_text,
+                hoverinfo='text',
+                legendgroup="Events"
+            ))
+        else:
+            # Always add a dummy trace so the legend entry is ALWAYS visible
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None],
+                mode='markers',
+                marker=dict(
+                    symbol=style["symbol"],
+                    size=style["size"],
+                    color=style["color"],
+                    line=dict(width=1, color='rgba(0,0,0,0.6)')
+                ),
+                name=f"{group['legend_name']} (0)",
+                legendgroup="Events",
+                showlegend=True,
+            ))
         
     return fig
+
 
 def add_heatmaps(fig: go.Figure, df: pd.DataFrame, show_traffic: bool = True, show_combat: bool = True, show_underused: bool = True):
     """
@@ -169,9 +207,9 @@ def add_heatmaps(fig: go.Figure, df: pd.DataFrame, show_traffic: bool = True, sh
     if show_traffic and not positions.empty:
         traffic_colors = [
             [0.0, 'rgba(0,0,0,0)'],
-            [0.2, 'rgba(241,250,140,0.3)'],
-            [0.6, 'rgba(255,184,108,0.5)'],
-            [1.0, 'rgba(255,85,85,0.7)']
+            [0.2, 'rgba(255,200,100,0.25)'],
+            [0.6, 'rgba(255,140,0,0.45)'],
+            [1.0, 'rgba(255,85,0,0.7)']
         ]
         fig.add_trace(go.Histogram2dContour(
             x=positions['pixel_x'], y=positions['pixel_y'],
@@ -189,8 +227,8 @@ def add_heatmaps(fig: go.Figure, df: pd.DataFrame, show_traffic: bool = True, sh
         if not combat.empty:
             combat_colors = [
                 [0.0, 'rgba(0,0,0,0)'],
-                [0.3, 'rgba(255,85,85,0.4)'],
-                [1.0, 'rgba(255,0,0,0.9)']
+                [0.3, 'rgba(255,100,50,0.4)'],
+                [1.0, 'rgba(255,50,0,0.9)']
             ]
             fig.add_trace(go.Histogram2dContour(
                 x=combat['pixel_x'], y=combat['pixel_y'],
@@ -220,6 +258,7 @@ def add_heatmaps(fig: go.Figure, df: pd.DataFrame, show_traffic: bool = True, sh
         ))
         
     return fig
+
 
 def render_full_minimap(
     img: Image.Image, 
