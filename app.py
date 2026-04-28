@@ -48,19 +48,34 @@ st.markdown("""
     }
     h1, h2, h3, h4 { font-family: 'Inter', sans-serif; }
 
-    /* ── Sidebar ────────────────────────── */
+    /* ── Sidebar — compact layout ─────── */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #111111 0%, #1A1A1A 100%);
         border-right: 1px solid rgba(255,140,0,0.15);
+    }
+    section[data-testid="stSidebar"] > div:first-child {
+        padding-top: 0.8rem;
     }
     section[data-testid="stSidebar"] .stMarkdown h2,
     section[data-testid="stSidebar"] .stMarkdown h3 {
         color: #FF8C00 !important;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 1.2px;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.15rem;
+        margin-top: 0.3rem;
+    }
+    /* Tighten sidebar element gaps */
+    section[data-testid="stSidebar"] .stSelectbox,
+    section[data-testid="stSidebar"] .stCheckbox,
+    section[data-testid="stSidebar"] .stButton {
+        margin-bottom: -8px;
+    }
+    section[data-testid="stSidebar"] hr {
+        margin-top: 0.3rem;
+        margin-bottom: 0.3rem;
+        border-color: rgba(255,140,0,0.1);
     }
 
     /* ── Header Banner ──────────────────── */
@@ -381,22 +396,23 @@ def main():
     # Apply coordinate bounding box
     match_df = add_pixel_coordinates(match_df, clip_out_of_bounds=True)
     
-    # ── Sidebar: Layer Toggles ──
+    # ── Sidebar: Layer Toggles (compact 2-col grid) ──
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 👁️ Visibility Layers")
+    st.sidebar.markdown("### 👁️ Layers")
+    lc1, lc2 = st.sidebar.columns(2)
+    with lc1:
+        show_routes = st.checkbox("Routes", value=True)
+        show_events = st.checkbox("Kills", value=True)
+        show_traffic = st.checkbox("Traffic", value=False)
+    with lc2:
+        show_combat = st.checkbox("Chokepoints", value=False)
+        show_underused = st.checkbox("Dead Space", value=False)
     
-    show_routes = st.sidebar.checkbox("Player Routes", value=True)
-    show_events = st.sidebar.checkbox("Kill/Death Events", value=True)
-    show_traffic = st.sidebar.checkbox("NavMesh Utilization", value=False)
-    show_combat = st.sidebar.checkbox("Engagement Chokepoints", value=False)
-    show_underused = st.sidebar.checkbox("Dead Space (Cold Zones)", value=False)
-    
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 👥 Player Filters")
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
+    st.sidebar.markdown("### 👥 Players")
+    pc1, pc2 = st.sidebar.columns(2)
+    with pc1:
         show_humans = st.checkbox("Humans", value=True)
-    with col2:
+    with pc2:
         show_bots = st.checkbox("Bots", value=True)
 
     # Filtering logic for Entities
