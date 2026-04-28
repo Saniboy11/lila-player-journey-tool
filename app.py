@@ -55,30 +55,42 @@ def main():
     # 1. Date Filter
     available_dates = ["February_10", "February_11", "February_12", "February_13", "February_14"]
     selected_date = st.sidebar.selectbox("Date", available_dates)
-    
-    # Load data for selected date
+
+    load_btn = st.sidebar.button("⚡ Load Match Data", type="primary", use_container_width=True)
+
+    if not load_btn and "day_df" not in st.session_state:
+        st.info("Select a date in the sidebar and click **⚡ Load Match Data** to begin.")
+        st.stop()
+
+    # Load data (cached after first load)
     folder_path = os.path.join(DATA_DIR, selected_date)
-    day_df = load_day_data(folder_path)
-    
+    if load_btn or "loaded_date" not in st.session_state or st.session_state.get("loaded_date") != selected_date:
+        with st.spinner(f"Loading {selected_date}…"):
+            st.session_state["day_df"] = load_day_data(folder_path)
+            st.session_state["loaded_date"] = selected_date
+
+    day_df = st.session_state["day_df"]
+
     if day_df.empty:
-        st.warning(f"No data available for {selected_date}.")
-        return
-        
+        st.warning(f"No data found for {selected_date}.")
+        st.stop()
+
     # 2. Map Filter
     if 'map_id' in day_df.columns:
         available_maps = sorted(day_df['map_id'].dropna().unique().tolist())
     else:
         available_maps = []
-        
+
     if not available_maps:
         st.warning("No map data found in dataset.")
         return
-        
+
     selected_map = st.sidebar.selectbox("Map", available_maps)
-    
+
     # Filter to specific map
     map_df = day_df[day_df['map_id'] == selected_map]
-    
+
+
     # 3. Match Selector
     available_matches = get_available_matches(map_df)
     if not available_matches:
