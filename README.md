@@ -27,7 +27,7 @@ Extract the sample dataset into `player_data/` before launching.
 
 ## 🚀 Live App Link
 
-### **[lila-player-journey-tool.streamlit.app](https://lila-player-journey-tool-47vbennpdn5luuwq3xcfxe.streamlit.app/)**
+### **[https://lila-player-journey-tool-47vbennpdn5luuwq3xcfxe.streamlit.app/](https://lila-player-journey-tool-47vbennpdn5luuwq3xcfxe.streamlit.app/)**
 
 ---
 
