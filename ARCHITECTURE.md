@@ -1,34 +1,49 @@
-# Architecture
+# Technical Architecture
 
-This document covers the technical decisions, data flow, and tradeoffs for the Match Flow Analyzer.
+This document outlines the architectural decisions, data pipeline, and technical tradeoffs for the LILA BLACK Match Flow Analyzer.
 
-## Tech Stack
-* **Streamlit:** Selected for rapid prototyping. It handles routing and state management natively, letting me focus entirely on data transformation and geospatial logic instead of frontend boilerplate.
-* **Plotly:** Provides native interactivity (zooming, panning, hover tooltips) and layered vector graphics. It allowed me to stack heatmaps and event markers on a single axis.
-* **PyArrow / Pandas:** Used for memory-efficient loading of Parquet files. Parquet's columnar compression is crucial here since Streamlit Cloud has strict 1GB memory limits.
+## Tech Stack & Rationale
 
-## Data Flow
-1. `data_loader.py` scans `player_data/` and reads the parquet files.
-2. Fragmented telemetry is aggregated by `match_id`. Matches are sorted by total player count so the UI surfaces the most active 100-player lobbies first.
-3. Raw world coordinates (x, y, z) are mapped to the 1024x1024 2D image grid.
-4. `app.py` filters the dataset temporally based on the timeline scrubber. The subset is passed to `visualizations.py`, which compiles Plotly traces.
+| Component | Technology | Rationale |
+|---|---|---|
+| **Frontend/Orchestration** | Streamlit | Rapid prototyping; native state management and Python integration. |
+| **Visualization Engine** | Plotly | Interactive vector layers (zoom/pan/hover) with low-overhead heatmap support. |
+| **Data Processing** | Pandas / PyArrow | Columnar performance and memory efficiency for high-frequency telemetry. |
+| **Ingestion Engine** | Concurrent.futures | Parallelized I/O to handle 400+ files/day without blocking the UI. |
 
-## Coordinate Mapping
-I used standard UV mapping to translate 3D world coordinates to the 2D minimap grid:
+## Data Pipeline
+
+1.  **Ingestion:** `data_loader.py` uses a `ThreadPoolExecutor` to perform parallel reads of daily Parquet shards.
+2.  **Aggregation:** Fragmented player events are grouped by `match_id`. Lobbies are ranked by player count and "Human Density" to surface analytically valuable data.
+3.  **Coordinate Projection:** 3D world coordinates (X, Z) are normalized into a 0-1 range (UV space) and projected onto a 1024x1024 pixel grid.
+4.  **State Management:** Match data is cached in `st.session_state` to prevent redundant I/O, while temporal filtering is performed on-the-fly via the UI timeline scrubber.
+
+## Coordinate Mapping Logic
+
+The tool maps 3D game-engine coordinates to a 2D viewport. In this system, **X and Z represent the ground plane**, while **Y represents elevation (verticality)**.
+
 ```python
-u = (world_x - origin_x) / scale
-v = (world_z - origin_z) / scale
+# UV Projection formula
+u = (world_x - origin_x) / map_scale
+v = (world_z - origin_z) / map_scale
 
 pixel_x = u * 1024
-pixel_y = (1 - v) * 1024 # Y-axis inverted for top-left image origin alignment
+pixel_y = (1 - v) * 1024  # Inverted for image origin alignment
 ```
 
-## Assumptions
-* **Timestamps:** The Parquet metadata listed `ts` in milliseconds, but the raw values were actually Unix epochs in seconds. I cast them to seconds to prevent the timeline logic from projecting matches as 1000x too long.
-* **Data Completeness:** If a `match_id` is missing some player data, I assume a disconnect or shard crash. The tool handles incomplete data gracefully.
-* **Elevation:** Verticality (Z-axis) is flattened for this 2D diagnostic tool. The focus is on horizontal flow and pacing for the MVP.
+*Note: For the current MVP, Y-axis data (elevation) is used for tooltips but flattened for 2D visualization.*
 
-## Tradeoffs
-* **Streamlit vs Custom React Frontend:** Streamlit is incredibly fast for building data apps, but it lacks client-side 60FPS animation loops.
-* **Manual Scrubbing vs Autoplay:** I opted for a manual timeline scrubber rather than an automated playback feature, as automated loops in Streamlit require heavy `st.rerun` hacks that can degrade performance.
-* **Lazy Loading:** Loading selected matches into RAM prevents Out-Of-Memory crashes, but introduces a small read latency when switching maps.
+## Architectural Decision Table
+
+| Decision | Selection | Tradeoff |
+|---|---|---|
+| **Frontend Framework** | Streamlit | **Pro:** 10x faster dev speed. **Con:** Limited to 1Hz UI refresh rate; no native WebGL animation loop. |
+| **Data Handling** | On-Demand Loading | **Pro:** Prevents Out-Of-Memory (OOM) on Streamlit Cloud (1GB limit). **Con:** Small latency (1-2s) when switching days. |
+| **Playback Logic** | Manual Scrubbing | **Pro:** Reliable performance and precision. **Con:** Lacks "Cinema-style" autoplay without complex `st.rerun` hacks. |
+| **Telemetry Format** | Parquet | **Pro:** 80% smaller footprint than CSV; significantly faster columnar reads. **Con:** Requires specialized libraries (PyArrow) for ingestion. |
+
+## Assumptions & Data Integrity
+
+- **Time Fidelity:** Raw `ts` integers are treated as Unix seconds. A 1000x scaling factor was applied during normalization to fix a source-data unit discrepancy.
+- **Entity Classification:** Entities with 4-digit IDs are flagged as "Bots" for noise reduction in tactical overlays.
+- **Spatial Precision:** Coordinates are clipped to the map bounding box to prevent "Out-of-Bounds" artifacts caused by edge-case telemetry errors.

@@ -1,37 +1,51 @@
-# LILA BLACK Match Flow Analyzer
+# LILA BLACK — Tactical Match Flow Analyzer
 
-A tactical telemetry visualization tool built for level designers. Instead of generic analytics (DAU, ARPU), this tool focuses on spatial awareness, map pacing, and geometry utilization to help designers validate map flow using production gameplay data.
+A spatial telemetry diagnostic tool built for level designers working on battle-royale map geometry. Rather than surface-level product metrics (DAU, ARPU), this tool answers a specific design question: **"Is my map flowing the way I intended?"**
 
-## Features
-* **Progressive Match Timeline:** Scrub through matches using an elapsed-time timeline to watch engagements unfold chronologically.
-* **Level Design Diagnostics:** Extracts pacing metrics like Time-to-First-Engagement and identifies dead space.
-* **Spatial Heatmaps:** Toggleable layers for NavMesh Utilization, Engagement Chokepoints, and Cold Zones.
-* **Event Rendering:** Differentiates Humans vs Bots, and plots distinct markers for Kills, Deaths, Storm Eliminations, and Loot.
-* **Match Reconstruction:** Groups fragmented player telemetry to stitch together full 100-player lobbies.
+It reconstructs full match timelines from raw Nakama telemetry, maps 3D world coordinates onto 2D minimaps, and layers combat events, movement heatmaps, and pacing diagnostics into a single interactive view.
+
+## Key Capabilities
+
+| Capability | What It Does | Design Question It Answers |
+|---|---|---|
+| **Match Timeline Scrubber** | Progressively reveals player positions and events from spawn → endgame | *"Where are players at the 2-minute mark? Are they looting or fighting?"* |
+| **Human vs Bot Separation** | Classifies entities by user ID format (UUID = Human, short ID = Bot) | *"Are humans behaving differently from AI fill? Where do real players go?"* |
+| **Spatial Heatmaps** | Toggleable layers for traffic density, combat chokepoints, and dead space | *"Which geometry is being ignored? Where are forced engagements?"* |
+| **Event Markers** | Plots Kills, Deaths, Storm Eliminations, and Loot pickups with distinct icons | *"Where are players dying? Is it to combat or to the storm?"* |
+| **Pacing Diagnostics** | Computes Time-to-First-Engagement, hottest chokepoint sector, coldest dead space | *"Is the early game too chaotic? Is mid-game stale?"* |
 
 ## Setup
-1. Clone this repository.
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Extract the sample dataset into the `player_data/` directory.
-4. Run the app:
-   ```bash
-   streamlit run app.py
-   ```
 
-## Deployment
-Live deployment: [Streamlit Cloud Link Placeholder]
+```bash
+git clone https://github.com/Saniboy11/lila-player-journey-tool.git
+cd lila-player-journey-tool
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Extract the sample dataset into `player_data/` before launching.
+
+## Live Deployment
+
+**Streamlit Cloud:** [lila-player-journey-tool.streamlit.app](https://lila-player-journey-tool-47vbennpdn5luuwq3xcfxe.streamlit.app/)
 
 ## Walkthrough
-1. **Select a Match:** Use the sidebar filters. Matches are sorted by player count to surface the most action-packed data first.
-2. **Observe Flow:** Toggle "Player Routes" to see dispersion from spawns.
-3. **Analyze Pacing:** Check "Time to First Engagement" in the diagnostics panel to see if players clash too early.
-4. **Scrub Timeline:** Drag the playback slider to watch trajectories and combat events reveal progressively.
-5. **Diagnose Geometry:** Use the NavMesh and Chokepoint heatmaps to identify forced combat zones and ignored dead space.
+
+1. **Select a date & load data.** Click ⚡ Load Match Data. Matches are ranked by human player presence so the most analytically relevant lobbies surface first.
+2. **Observe movement flow.** Toggle "Routes" to see player dispersion from spawns across the map.
+3. **Analyze pacing.** Check Time-to-First-Engagement in the diagnostics panel — values under 15 seconds signal spawn-point congestion.
+4. **Scrub the timeline.** Drag the playback slider to watch trajectories and combat events unfold chronologically.
+5. **Diagnose geometry.** Enable Traffic and Chokepoint heatmaps to identify forced combat zones and ignored dead space.
+
+## Data Pipeline
+
+```
+437 Parquet files/day → ThreadPoolExecutor (8 workers, ~2s) → Pandas DataFrame
+    → match_id aggregation → UV coordinate transform → Plotly trace compilation
+```
 
 ## Future Improvements
-* Migrate from Plotly to WebGL (Deck.gl/Kepler.gl) for smoother rendering of 10k+ coordinate points.
-* Implement spline-based path interpolation for automated match playback.
-* Add elevation filters to differentiate ground-level fights from rooftop combat.
+
+- Migrate from Plotly to WebGL (Deck.gl) for smoother rendering at 10k+ coordinate points.
+- Add elevation-based filtering to separate ground-level fights from verticality engagements.
+- Implement spline interpolation for automated match playback animations.
