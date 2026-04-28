@@ -111,12 +111,18 @@ def get_match_data(df: pd.DataFrame, match_id: str) -> pd.DataFrame:
 def get_available_matches(df: pd.DataFrame) -> list:
     if df.empty or 'match_id' not in df.columns:
         return []
-    match_counts = (
-        df.groupby('match_id', observed=True)['user_id']
-        .nunique()
-        .sort_values(ascending=False)
-    )
-    return match_counts.index.tolist()
+    
+    # Calculate human counts per match
+    human_mask = df['player_type'] == 'Human'
+    human_counts = df[human_mask].groupby('match_id', observed=True)['user_id'].nunique()
+    
+    # Calculate total counts per match
+    total_counts = df.groupby('match_id', observed=True)['user_id'].nunique()
+    
+    # Combine and score (1000 points per human + 1 point per bot)
+    scores = (human_counts.reindex(total_counts.index).fillna(0) * 1000) + total_counts
+    
+    return scores.sort_values(ascending=False).index.tolist()
 
 
 def audit_data_sanity(df: pd.DataFrame) -> dict:
