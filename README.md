@@ -27,7 +27,8 @@ Extract the sample dataset into `player_data/` before launching.
 
 ## Live Deployment
 
-**Streamlit Cloud:** [lila-player-journey-tool.streamlit.app](https://lila-player-journey-tool-47vbennpdn5luuwq3xcfxe.streamlit.app/)
+**Streamlit Cloud:** [lila-player-journey-tool.streamlit.app](https://lila-player-journey-tool-47vbennpdn5luuwq3xcfxe.streamlit.app/)  
+**Video Walkthrough:** [Loom Demo](https://www.loom.com/share/7f2452c4c2544c7c9cd7e3ebad232ba6)
 
 ## Walkthrough
 
