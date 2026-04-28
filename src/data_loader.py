@@ -83,8 +83,9 @@ def load_day_data(folder_path: str) -> pd.DataFrame:
             df['ts'] = pd.to_datetime(df['ts'], unit='s', errors='coerce')
         elif pd.api.types.is_datetime64_any_dtype(df['ts']):
             # Already a datetime but may have been parsed with wrong unit.
-            # Reinterpret nanoseconds as seconds.
-            raw = df['ts'].astype('int64') // 1_000_000_000
+            # Reinterpret nanoseconds as milliseconds (which the raw integer actually represented in the schema) 
+            # and treat that integer as seconds.
+            raw = df['ts'].astype('int64') // 1_000_000
             df['ts'] = pd.to_datetime(raw, unit='s', errors='coerce')
         df = df.dropna(subset=['ts'])
 
