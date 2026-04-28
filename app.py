@@ -20,26 +20,23 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    /* ── Global ─────────────────────────── */
-    html, body,
-    .stMarkdown, .stText, .stAlert,
-    p, div, label, li, td, th,
-    input, textarea, select, button {
+    /* ── Global — scoped font override ── */
+    /* Only target content areas, NEVER touch Streamlit framework controls */
+    .main .block-container,
+    .main .block-container p,
+    .main .block-container label,
+    .main .block-container li,
+    .main .block-container td,
+    .main .block-container th,
+    .main .block-container input,
+    .main .block-container textarea,
+    .main .block-container select,
+    .main .block-container button,
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] .stSelectbox,
+    section[data-testid="stSidebar"] .stCheckbox label,
+    section[data-testid="stSidebar"] .stButton button {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    /* Protect ALL Streamlit internal icon/control fonts from being overridden */
-    [data-testid="collapsedControl"],
-    [data-testid="collapsedControl"] *,
-    [data-testid="stToolbar"],
-    [data-testid="stToolbar"] *,
-    [data-testid="stStatusWidget"] *,
-    [data-testid="stHeader"] *,
-    [data-testid="stSidebarCollapseButton"] *,
-    [data-testid="stBaseButton-headerNoPadding"] *,
-    .stIcon, svg, i,
-    span[class*="icon"], span[class*="Icon"],
-    span[data-testid] {
-        font-family: revert !important;
     }
     .main .block-container {
         padding-top: 1.5rem;
