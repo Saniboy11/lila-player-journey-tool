@@ -23,17 +23,23 @@ st.markdown("""
     /* ── Global ─────────────────────────── */
     html, body,
     .stMarkdown, .stText, .stAlert,
-    p, span, div, label, li, td, th,
+    p, div, label, li, td, th,
     input, textarea, select, button {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    /* Protect Streamlit's internal icon fonts from being overridden */
+    /* Protect ALL Streamlit internal icon/control fonts from being overridden */
+    [data-testid="collapsedControl"],
     [data-testid="collapsedControl"] *,
+    [data-testid="stToolbar"],
     [data-testid="stToolbar"] *,
     [data-testid="stStatusWidget"] *,
+    [data-testid="stHeader"] *,
+    [data-testid="stSidebarCollapseButton"] *,
+    [data-testid="stBaseButton-headerNoPadding"] *,
     .stIcon, svg, i,
-    [class*="icon"], [class*="Icon"] {
-        font-family: inherit !important;
+    span[class*="icon"], span[class*="Icon"],
+    span[data-testid] {
+        font-family: revert !important;
     }
     .main .block-container {
         padding-top: 1.5rem;
